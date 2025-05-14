@@ -1,0 +1,150 @@
+[
+  {
+    "timestamp": "2025-05-14 04:11:34",
+    "text": "Testing."
+  },
+  {
+    "timestamp": "2025-05-14T04:29:02.952122",
+    "text": "See you next time."
+  },
+  {
+    "timestamp": "2025-05-14T04:29:18.476759",
+    "text": "Hey."
+  },
+  {
+    "timestamp": "2025-05-14T04:29:43.036341",
+    "text": ""
+  },
+  {
+    "timestamp": "2025-05-14T04:30:26.294308",
+    "text": "If I get really close to the microphone, is it going to work now?"
+  },
+  {
+    "timestamp": "2025-05-14T04:30:43.704967",
+    "text": "Okay, then I guess the command the key command"
+  },
+  {
+    "timestamp": "2025-05-14T04:31:23.693865",
+    "text": "Automatic"
+  },
+  {
+    "timestamp": "2025-05-14T04:32:28.502015",
+    "text": "testing the clipboard integration"
+  },
+  {
+    "timestamp": "2025-05-14T04:32:53.825624",
+    "text": "Hey guys! Welcome back to my channel! If you haven't subscribed to my channel yet, please do so now! Hope you guys enjoy today's video!"
+  },
+  {
+    "timestamp": "2025-05-14T04:33:09.103516",
+    "text": ""
+  },
+  {
+    "timestamp": "2025-05-14T04:34:57.146428",
+    "text": "Testing the fucking shit, testing the shit."
+  },
+  {
+    "timestamp": "2025-05-14T04:35:34.813204",
+    "text": "Okay, that's great, but we need to record for longer than 5 seconds."
+  },
+  {
+    "timestamp": "2025-05-14T04:37:14.704413",
+    "text": "Oh, yes. Oh, yes. It works."
+  },
+  {
+    "timestamp": "2025-05-14T04:37:36.483372",
+    "text": "So I just changed the hotkey to right alt and it's great."
+  },
+  {
+    "timestamp": "2025-05-14T04:37:50.488899",
+    "text": "And the clipboard integration works good, but can we do"
+  },
+  {
+    "timestamp": "2025-05-14T04:38:13.413777",
+    "text": "and I would like to have the recording last for as long as I hold"
+  },
+  {
+    "timestamp": "2025-05-14T04:42:44.740915",
+    "text": "Okay."
+  },
+  {
+    "timestamp": "2025-05-14T04:42:58.512958",
+    "text": "Fucking right on, uh, hey, guess what I'm using to type this message to you right now? I bet you can't guess. I bet you can't."
+  },
+  {
+    "timestamp": "2025-05-14T04:44:12.183035",
+    "text": "What I would really love is to have this, like, be able to be launched from a, you know, like any other app so I can search up in the system menu and like, you know, get it to work good. As if I was opening Firefox or anything. I don't want to have to run a bunch of fuckin' VNV source type shit every time I want to start this thing up, you know?"
+  },
+  {
+    "timestamp": "2025-05-14T04:44:48.155269",
+    "text": "Dude, you know I always want you to do it for me. What do you think I am, industrious?"
+  },
+  {
+    "timestamp": "2025-05-14T04:46:43.010659",
+    "text": "Okay, very nice try, but when I click it, it shows up right in the, uh, yeah, right where it should. But when I click it, nothing happens. Just nothing. Um, also, absolutely, I want a, uh, a real icon."
+  },
+  {
+    "timestamp": "2025-05-14T04:48:32.701275",
+    "text": "Okay, does it still work?"
+  },
+  {
+    "timestamp": "2025-05-14T04:49:05.381605",
+    "text": "dude you made the icon a fucking pencil that's funny I'm gonna go and change the icon out what do I have to do I have to like do we have to edit the desktop entry thing and run a bunch of shit to make it update or"
+  },
+  {
+    "timestamp": "2025-05-14T04:49:28.968318",
+    "text": "microphone icon PNG"
+  },
+  {
+    "timestamp": "2025-05-14T04:56:07.456794",
+    "text": "Can you take this image and use some tool to invert it so it's white and just make a different version so it'll be a white version and the original version too."
+  },
+  {
+    "timestamp": "2025-05-14T04:58:47.089274",
+    "text": "Okay, uh, I don't know what happened, but that desktop entry isn't working. Like, it pulls up a terminal for like a half of a second, a split second, and then that closes out. So I can't even tell if that's like having an error in there, because it's so fucking quick. So yeah, I don't know if you can help me out with that."
+  },
+  {
+    "timestamp": "2025-05-14T05:00:31.809965",
+    "text": "Yeah, I'm pretty sure the issue is that that launch script is not properly sourcing the VNV, because I think, okay, where you have the source in that bash script, it's doing project or slash dot VNV instead of just VNV, so I think just an extra dot, so."
+  },
+  {
+    "timestamp": "2025-05-14T05:03:24.659203",
+    "text": "Yes."
+  },
+  {
+    "timestamp": "2025-05-14T05:08:55.955210",
+    "text": "Okay, all is well with the auto-launch icon thing, however, it just opens a big, ugly terminal window, and I can't even close it, because that closes, like, that terminates the script, so, what can we do to get around that, like, yeah, what do people usually do there?"
+  },
+  {
+    "timestamp": "2025-05-14T05:09:59.992376",
+    "text": "Okay, I made the change in the shell script, but can you help me edit the desktop file?"
+  },
+  {
+    "timestamp": "2025-05-14T05:14:18.224152",
+    "text": "yeah it's still still bringing up the terminal so I do we just have to deal with that"
+  },
+  {
+    "timestamp": "2025-05-14T05:17:01.043020",
+    "text": "Well, yes. It works. Yes."
+  },
+  {
+    "timestamp": "2025-05-14T05:17:42.521521",
+    "text": "Um, let's get this thing, like, clean up the whole directory and make it into something I can put up on github so other people can use it too."
+  },
+  {
+    "timestamp": "2025-05-14T05:17:58.286435",
+    "text": "It should be really really easy to install and yeah."
+  },
+  {
+    "timestamp": "2025-05-14T05:18:24.744719",
+    "text": "I made it because I couldn't find anything else that, well, A, something that fucking worked at all on Ubuntu, and something that would let you just put in your own Whisper API key, because I couldn't run anything locally."
+  },
+  {
+    "timestamp": "2025-05-14T05:19:15.405870",
+    "text": "Yeah, you can leave that as optional, how about that?"
+  },
+  {
+    "timestamp": "2025-05-14T05:22:38.154188",
+    "text": "How do I set up a new repo and get from here?"
+  }
+]
