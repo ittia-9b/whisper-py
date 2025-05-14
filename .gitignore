@@ -14,7 +14,9 @@ venv/
 # Logs
 *.log
 whisper-launch.log
+transcription_history.json
 
 # OS files
 .DS_Store
 Thumbs.db
+transcription_history.json

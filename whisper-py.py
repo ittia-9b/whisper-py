@@ -9,7 +9,7 @@ import sys
 import json
 import datetime
 from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, QThread
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, QThread, QSettings
 from pynput import keyboard as pynput_keyboard
 import pyautogui
 
@@ -60,7 +60,8 @@ class TranscriptionWorker(QObject):
         filename = "temp.wav"
         try:
             scipy.io.wavfile.write(filename, fs, self.audio_data)
-            api_key = os.getenv("OPENAI_API_KEY")
+            settings = QSettings()
+            api_key = settings.value("openai/api_key", os.getenv("OPENAI_API_KEY", ""))
             client = openai.OpenAI(api_key=api_key)
             with open(filename, "rb") as audio_file:
                 transcript = client.audio.transcriptions.create(
@@ -113,10 +114,16 @@ class TrayApp(QtWidgets.QSystemTrayIcon):
         
         # Set up system tray menu
         menu = QtWidgets.QMenu(parent)
-        action_record = menu.addAction('Record && Transcribe (Right Alt)')
-        action_record.triggered.connect(self.start_transcription)
+        # Dynamic record action showing current hotkey
+        self.action_record = menu.addAction("Record && Transcribe")
+        self.action_record.setCheckable(True)
+        self.action_record.triggered.connect(self.toggle_transcription)
         action_quit = menu.addAction('Quit')
         action_quit.triggered.connect(self.quit_application)
+        action_settings = menu.addAction('Settings...')
+        action_settings.triggered.connect(self.show_settings)
+        action_history = menu.addAction('History...')
+        action_history.triggered.connect(self.show_history)
         self.setContextMenu(menu)
         self.activated.connect(self.on_activated)
         
@@ -188,6 +195,117 @@ class TrayApp(QtWidgets.QSystemTrayIcon):
             except Exception as e:
                 print(f"Auto-paste failed: {e}")
 
+    def show_settings(self, checked=False):
+        """Show settings dialog"""
+        dialog = SettingsDialog(self.parent)
+        if dialog.exec_():
+            # Refresh menu label when hotkey changes
+            self.update_record_action()
+    
+    def show_history(self, checked=False):
+        """Show transcription history dialog"""
+        dialog = HistoryDialog(self.parent)
+        dialog.exec_()
+    
+    def update_record_action(self):
+        """Set the record menu item label to just 'Record && Transcribe'"""
+        self.action_record.setText("Record && Transcribe")
+
+    def toggle_transcription(self):
+        """Toggle recording/transcription from tray menu."""
+        if not recording_state['is_recording']:
+            start_recording()
+        else:
+            stop_recording_and_transcribe()
+
+
+
+class SettingsDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Settings")
+        layout = QtWidgets.QFormLayout(self)
+        self.apiKeyEdit = QtWidgets.QLineEdit(self)
+        settings = QSettings()
+        from os import getenv
+        self.apiKeyEdit.setText(settings.value("openai/api_key", getenv("OPENAI_API_KEY", "")))
+        layout.addRow("OpenAI API Key:", self.apiKeyEdit)
+        # Info label for hotkeys
+        info = QtWidgets.QLabel(
+            "<b>Hotkeys:</b> <br>"
+            "<ul>"
+            "<li>Alt + , (comma): Hold to record, release to finish/transcribe</li>"
+            "<li>Alt + . (dot): Tap to toggle recording on/off</li>"
+            "<li>Alt + / (slash): Tap to cancel recording/transcription</li>"
+            "</ul>"
+            "These are not configurable."
+        )
+        info.setWordWrap(True)
+        layout.addRow(info)
+        btnBox = QtWidgets.QHBoxLayout()
+        saveBtn = QtWidgets.QPushButton("Save", self)
+        cancelBtn = QtWidgets.QPushButton("Cancel", self)
+        btnBox.addWidget(saveBtn)
+        btnBox.addWidget(cancelBtn)
+        layout.addRow(btnBox)
+        saveBtn.clicked.connect(self.save)
+        cancelBtn.clicked.connect(self.reject)
+
+    def save(self):
+        """Save settings"""
+        settings = QSettings()
+        settings.setValue("openai/api_key", self.apiKeyEdit.text())
+        self.accept()
+
+# History viewer dialog
+class HistoryDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Transcription History")
+        self.resize(700, 500)
+        layout = QtWidgets.QVBoxLayout(self)
+        scroll = QtWidgets.QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        container = QtWidgets.QWidget()
+        vbox = QtWidgets.QVBoxLayout(container)
+
+        try:
+            with open('transcription_history.json', 'r') as f:
+                history = json.load(f)
+        except Exception:
+            history = []
+
+        for e in history:
+            ts = e.get('timestamp', '')
+            # Compact timestamp: YYYY-MM-DD HH:MM
+            try:
+                dt = datetime.datetime.fromisoformat(ts)
+                ts_str = dt.strftime('%Y-%m-%d %H:%M')
+            except Exception:
+                ts_str = ts[:16]
+            text = e.get('text', '')
+            entry_widget = QtWidgets.QWidget()
+            hbox = QtWidgets.QHBoxLayout(entry_widget)
+            label = QtWidgets.QLabel(f"<b>{ts_str}</b><br>{text}")
+            label.setWordWrap(True)
+            label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            hbox.addWidget(label)
+            copy_btn = QtWidgets.QPushButton("Copy")
+            copy_btn.setFixedWidth(60)
+            copy_btn.clicked.connect(lambda _, t=text: QtWidgets.QApplication.clipboard().setText(t))
+            hbox.addWidget(copy_btn)
+            vbox.addWidget(entry_widget)
+        vbox.addStretch(1)
+        scroll.setWidget(container)
+        layout.addWidget(scroll)
+        btnClose = QtWidgets.QPushButton("Close", self)
+        layout.addWidget(btnClose)
+        btnClose.clicked.connect(self.accept)
+        self.setLayout(layout)
+        self.setMinimumSize(600, 400)
+        self.setSizeGripEnabled(True)
+
+
 def start_recording():
     if recording_state['is_recording']:
         return
@@ -223,24 +341,59 @@ def stop_recording_and_transcribe():
     tray.start_transcription()
 
 def hotkey_listener():
-    """Background thread to listen for hotkeys and control recording"""
-    COMBO = {pynput_keyboard.Key.alt_r}
-    current = set()
-
+    """Background thread: supports Alt+Comma (hold), Alt+Dot (toggle), Alt+Slash (cancel) only."""
+    from pynput.keyboard import Key, KeyCode
+    pressed_mods = set()
+    toggle_active = False
+    def is_alt_mod():
+        return Key.alt in pressed_mods
     def on_press(key):
-        if key in COMBO and not recording_state['is_recording']:
-            current.add(key)
-            start_recording()
-
+        nonlocal toggle_active
+        if key in (Key.ctrl, Key.ctrl_l, Key.ctrl_r):
+            pressed_mods.add(Key.ctrl)
+        if key in (Key.alt, Key.alt_l, Key.alt_r):
+            pressed_mods.add(Key.alt)
+        if key in (Key.shift, Key.shift_l, Key.shift_r):
+            pressed_mods.add(Key.shift)
+        # Alt + , (comma): hold to record
+        if is_alt_mod() and key == KeyCode.from_char(','):
+            if not recording_state['is_recording']:
+                start_recording()
+        # Alt + . (dot): toggle
+        if is_alt_mod() and key == KeyCode.from_char('.'):
+            if not toggle_active:
+                if not recording_state['is_recording']:
+                    start_recording()
+                toggle_active = True
+            else:
+                if recording_state['is_recording']:
+                    stop_recording_and_transcribe()
+                toggle_active = False
+        # Alt + / (slash): cancel
+        if is_alt_mod() and key == KeyCode.from_char('/'):
+            if recording_state['is_recording']:
+                print("Recording canceled.")
+                recording_state['is_recording'] = False
+                stream = recording_state.get('stream')
+                if stream:
+                    stream.stop()
+                    stream.close()
     def on_release(key):
-        if key in current:
-            current.remove(key)
-            stop_recording_and_transcribe()
-
+        nonlocal toggle_active
+        if key in (Key.ctrl, Key.ctrl_l, Key.ctrl_r):
+            pressed_mods.discard(Key.ctrl)
+        if key in (Key.alt, Key.alt_l, Key.alt_r):
+            pressed_mods.discard(Key.alt)
+        if key in (Key.shift, Key.shift_l, Key.shift_r):
+            pressed_mods.discard(Key.shift)
+        # Alt + , (comma): release to finish
+        if key == KeyCode.from_char(',') and is_alt_mod():
+            if recording_state['is_recording']:
+                stop_recording_and_transcribe()
+        # Alt + . (dot): handled on press as toggle
+        # Alt + / (slash): handled on press as cancel
     with pynput_keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()
-
-
 
 
 def main():
@@ -249,6 +402,7 @@ def main():
     
     # Create application
     app = QtWidgets.QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     
     # Create parent widget to handle custom events
     parent_widget = QtWidgets.QWidget()
@@ -269,7 +423,7 @@ def main():
     tray = TrayApp(icon, parent_widget)
     tray.show()
     
-    # Start hotkey listener in a thread
+    # Start hotkey listener
     threading.Thread(target=hotkey_listener, daemon=True).start()
     
     # Start Qt event loop
