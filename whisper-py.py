@@ -112,6 +112,16 @@ class TrayApp(QtWidgets.QSystemTrayIcon):
         self.parent = parent
         self.setToolTip('Whisper Transcriber')
         
+        # Icons for different states
+        self.icons = {
+            'idle': QtGui.QIcon('mic2-white.png'),
+            'recording': QtGui.QIcon('mic2-red.png'),
+            'processing': QtGui.QIcon('mic2-yellow.png')
+        }
+        
+        # Set initial state
+        self.update_icon('idle')
+        
         # Set up system tray menu
         menu = QtWidgets.QMenu(parent)
         # Dynamic record action showing current hotkey
@@ -166,6 +176,9 @@ class TrayApp(QtWidgets.QSystemTrayIcon):
         # Connect signals for this specific run
         self.worker.signals.finished.connect(self.transcription_finished)
         
+        # Update icon to processing state
+        self.update_icon('processing')
+        
         # Use QMetaObject.invokeMethod with a slot
         QtCore.QMetaObject.invokeMethod(self.worker, 'run', QtCore.Qt.QueuedConnection)
         
@@ -176,10 +189,16 @@ class TrayApp(QtWidgets.QSystemTrayIcon):
         # Disconnect to prevent multiple connections
         self.worker.signals.finished.disconnect(self.transcription_finished)
         
+        # Reset icon to idle state
+        self.update_icon('idle')
+        
     def handle_error(self, error_msg):
         """Handle errors from the worker thread"""
         print(f"Error: {error_msg}")
         self.is_transcribing = False
+        
+        # Reset icon to idle state on error
+        self.update_icon('idle')
         
     def show_notification(self, title, message):
         """Show a system tray notification, copy transcription to clipboard, and auto-paste if appropriate"""
@@ -210,15 +229,30 @@ class TrayApp(QtWidgets.QSystemTrayIcon):
     def update_record_action(self):
         """Set the record menu item label to just 'Record && Transcribe'"""
         self.action_record.setText("Record && Transcribe")
+        
+    def update_icon(self, state):
+        """Update the system tray icon based on current state
+        
+        Args:
+            state (str): One of 'idle', 'recording', or 'processing'
+        """
+        if state in self.icons:
+            self.setIcon(self.icons[state])
+            status_text = {
+                'idle': 'Whisper Transcriber - Ready',
+                'recording': 'Whisper Transcriber - Recording',
+                'processing': 'Whisper Transcriber - Processing'
+            }.get(state, 'Whisper Transcriber')
+            self.setToolTip(status_text)
 
-    def toggle_transcription(self):
+    def toggle_transcription(self, checked=False):
         """Toggle recording/transcription from tray menu."""
         if not recording_state['is_recording']:
             start_recording()
+            self.update_icon('recording')
         else:
             stop_recording_and_transcribe()
-
-
+            # Processing icon will be set by start_transcription
 
 class SettingsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -320,6 +354,9 @@ def start_recording():
     stream = sd.InputStream(samplerate=fs, channels=1, dtype='int16', callback=callback)
     recording_state['stream'] = stream
     stream.start()
+    # Update icon color if tray exists
+    if 'tray' in globals() and tray is not None:
+        tray.update_icon('recording')
 
 def stop_recording_and_transcribe():
     if not recording_state['is_recording']:
@@ -333,12 +370,15 @@ def stop_recording_and_transcribe():
     frames = recording_state.get('frames', [])
     if not frames:
         print("No audio recorded.")
+        # Reset to idle if no audio recorded
+        if 'tray' in globals() and tray is not None:
+            tray.update_icon('idle')
         return
     audio_data = np.concatenate(frames, axis=0)
     audio_length = (datetime.datetime.now() - recording_state['start_time']).total_seconds()
     # Set audio for worker and trigger transcription
     tray.worker.set_audio(audio_data, audio_length)
-    tray.start_transcription()
+    tray.start_transcription()  # This will set the icon to 'processing' state
 
 def hotkey_listener():
     """Background thread: supports Alt+Comma (hold), Alt+Dot (toggle), Alt+Slash (cancel) only."""
@@ -378,6 +418,9 @@ def hotkey_listener():
                 if stream:
                     stream.stop()
                     stream.close()
+                # Reset icon to idle state when canceling
+                if 'tray' in globals() and tray is not None:
+                    tray.update_icon('idle')
     def on_release(key):
         nonlocal toggle_active
         if key in (Key.ctrl, Key.ctrl_l, Key.ctrl_r):
